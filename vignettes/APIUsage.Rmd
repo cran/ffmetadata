@@ -1,0 +1,159 @@
+---
+title: "How to Query Metadata from the Fragile Families API"
+author: "Ryan Vinh and Ian E. Fellows"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{How to Query Metadata from the Fragile Families API}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+## Introduction
+
+The ffmetadata package provides easy to use access to metadata surrounding the Fragile Families Project data (https://fragilefamilies.princeton.edu/). The data itself is complex, but this tool makes it easy to find and filter information about the variables included in the data. It does this by querying the Fragile Families web API. Two functions are available for use:
+
+* `select_metadata()`: allows the user the find out specific information about a single variable
+* `search_metadata()`: allows the user to search for a variable / variables based on certain parameters
+
+```{r, echo=FALSE}
+library(ffmetadata)
+```
+
+
+## `select_metadata()`
+### Using `select_metadata()` to find out information out about a variable
+
+
+#### Selecting one field
+Suppose we want to find out the value of a given variable's field.  For example, let's say we want to find out the source of the variable with the name "ce3datey". To accomplish this, we would call `select_metadata()` using "ce3datey" for `variable_name` and "data_source" for `fields`.
+
+```{r}
+select_type <- select_metadata(variable_name = "ce3datey", fields = "data_source")
+```
+
+`select_type`:
+
+```{r, echo=FALSE}
+select_type
+```
+
+#### Selecting multiple fields
+
+`select_metadata()` can also be used to find out information about several fields of a given variable along the following lines:
+
+```{r}
+select_multiple_fields <- select_metadata(variable_name = "ce3datey", fields = c("data_source", "data_type"))
+```
+
+`select_multiple_fields`:
+
+```{r, echo=FALSE}
+select_multiple_fields
+```
+
+#### Selecting the entire variable
+
+If we want to view the entire variable and all the values for its fields, we can call select_metadata without using the `fields` parameter and simply using "ce3datey" for `variable_name`. This will return ce3datey as a data frame row, with each of its fields corresponding to a column of that row.
+
+```{r}
+select_full <- select_metadata(variable_name = "ce3datey")
+```
+
+`select_full`:
+
+```{r, echo=FALSE}
+select_full
+```
+
+#### Modifying the return type
+
+For those who seek greater control over the formatting process, the `returnDataFrame` parameter can be set to `FALSE`. This will cause `select_metadata()` to return a nested list object that aligns more directly with the underlying JSON represenation of the data. By default, `select_metadata()` will return a dataframe unless this parameter's value is specified.
+
+```{r}
+select_return_list <- select_metadata(variable_name = "ce3datey", returnDataFrame = FALSE)
+```
+
+`select_return_list`:
+
+```{r, echo=FALSE}
+select_return_list
+```
+
+
+## `search_metadata()`
+### Using `search_metadata()` to search for variables
+
+`search_metadata()` allows users to search for variables based on specified field values. This function returns a list of all the variable names that match the specified parameters.  For instance, suppose we want to search for all the variables from the "Year 1" wave. To accomplish this, we would call `search_metadata()` in the following way:
+
+```{r}
+search_1 <- search_metadata(wave = "Year 1")
+```
+
+Any of the above-specified fields can be used to search for variables in combination with one another.  For example, suppose we want to search for all the variables from the "Year 1" wave that have "Mother" listed as the respondent.  To accomplish this, we would call `search_metadata()` like so:
+
+```{r}
+search_1_and <- search_metadata(wave = "Year 1", respondent = "Mother")
+```
+
+
+#### Using Operations with `search_metadata()`
+
+`search_metadata()` also provides functionality for a number of other operators. For instance, if we want to find all the variables with names that start with the string "f1", we can use the "like" operator like so:
+
+```{r}
+search_start_with <- search_metadata(name = "f1%", operation = "like")
+```
+
+As another example, if we want to find all the variables for which the respondent was either the father or the mother, we can use the "in" operator like so:
+
+```{r}
+search_respondents <- search_metadata(respondent = list("Interviewer", "Child Care Provider"), operation = "in")
+```
+
+The operation convention changes slightly when using either of the operations related to null checking. Rather than specify the operation using the `operation` parameter, the null check is specifed by the field value.  For instance, if we want to find all the variables in which the question text is null, we can format the call like so:
+
+```{r}
+search_qtext <- search_metadata(qtext = "is_null")
+```
+
+By default, the `operation` parameter is set to equals, but it can be specified for a variety of operations. Below is a list of valid operations:
+
+* **like**: search for a pattern
+* **lt**: less-than
+* **le**: less-than-or-equal-to
+* **gt**: greater-than
+* **gte**: greater-than-or-equal-to
+* **neq**: not equals
+* **in**: is in (requires list value)
+* **not_in**: is not in (requires list value)
+* **is_null**: is null / missing
+* **is_not_null**: is not null / not missing
+
+## Field names that can be used in these functions
+
+The `select_metadata()` and `search_metadata()` functions both involve searching or using the field names of the metadata variables in some way. Below are the field names that can be used when invoking these functions:
+  
+* **data_source** options: collected from the questionnaire, constructed from the questionnaire, a survey weight, or the unique ID assigned to each family
+* **data_type** options: ordered continuous, unordered categorical, ordered categorical, binary, or string
+* **fp_PCG** binary variable indicating whether or not focal person is primary care giver
+* **fp_father** binary variable indicating whether or not focal person is father
+* **fp_fchild** binary variable indicating whether or not focal person is child
+* **fp_mother** binary variable indicating whether or not focal person is mother
+* **fp_other** binary variable indicating whether or not focal person is other
+* **fp_partner** binary variable indicating whether or not focal person is partner
+* **group** denotes a group of similar variables across waves and/or surveys
+* **id** family ID
+* **in_FFC_file** a flag for whether this variable was included in the data file for the Fragile Families Challenge (yes/no)
+* **leaf** survey section and question number or constructed variable name
+* **n_cities_asked** number of cities in which the question was asked
+* **name** variable name used after 2018
+* **old_name** old variable name, used before 2018
+* **probe** the exact wording of the lead-in question from the questionnaire
+* **qText** question text
+* **respondent** who answered the question (e.g., "mother")
+* **section** section of the survey
+* **varlab** variable description
+* **warning** reports if there is something unusual about the answer choices for this variable
+* **wave** wave of the survey 
